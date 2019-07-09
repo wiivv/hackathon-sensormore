@@ -13,19 +13,30 @@ import CoreMotion
 class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManagerCallback {
     
     @IBOutlet var chartView: LineChartView!
+    @IBOutlet var dataPointLabel: UILabel!
+    @IBOutlet var resetButton: UIButton!
     
     var shouldHideData: Bool = false
     
     let MAX_NUM_OF_DATA_POINT = 50
+    var NUM_OF_PERSISTED = 0
+    var NUM_OF_CURRENT_SESSION = 0
+    
     var coreMotionManager : CoreMotionManager?
     var accelerateX: [ChartDataEntry] = []
     var accelerateY: [ChartDataEntry] = []
     var accelerateZ: [ChartDataEntry] = []
     
+    var coreDataManager : CoreDataManager = CoreDataManager()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
+        let datas = CoreDataManager.sharedManager.fetchAccelerometerDatas()
+        NUM_OF_PERSISTED = datas?.count ?? 0
+        dataPointLabel.text = "Persisted=\(NUM_OF_PERSISTED), Current=\(NUM_OF_CURRENT_SESSION)"
+
         coreMotionManager = CoreMotionManager()
         coreMotionManager?.manCallBack = self
         
@@ -140,6 +151,11 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
         accelerateX.append(ChartDataEntry(x: now, y: data.x))
         accelerateY.append(ChartDataEntry(x: now, y: data.y))
         accelerateZ.append(ChartDataEntry(x: now, y: data.z))
+        
+        let _ = CoreDataManager.sharedManager.insertAccelerometerData(data.x, y: data.y, z: data.z)
+        
+        NUM_OF_CURRENT_SESSION += 1
+        dataPointLabel.text = "Persisted=\(NUM_OF_PERSISTED), Current=\(NUM_OF_CURRENT_SESSION)"
         
         updateChartData()
     }

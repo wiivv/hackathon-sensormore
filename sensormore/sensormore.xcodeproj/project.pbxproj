@@ -16,6 +16,8 @@
 		022C71E122D5148500576CDD /* sensormoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022C71E022D5148500576CDD /* sensormoreTests.swift */; };
 		022C71EC22D5148500576CDD /* sensormoreUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022C71EB22D5148500576CDD /* sensormoreUITests.swift */; };
 		026F14A022D5466C00D41FBD /* CoreMotionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026F149F22D5466C00D41FBD /* CoreMotionManager.swift */; };
+		026F14A222D54FA500D41FBD /* CoreDataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026F14A122D54FA500D41FBD /* CoreDataManager.swift */; };
+		026F14A522D54FD100D41FBD /* SensorModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 026F14A322D54FD100D41FBD /* SensorModel.xcdatamodeld */; };
 		02D5778B22D51C4D00BA49A3 /* DateValueFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D5778A22D51C4D00BA49A3 /* DateValueFormatter.swift */; };
 /* End PBXBuildFile section */
 
@@ -52,6 +54,8 @@
 		022C71EB22D5148500576CDD /* sensormoreUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = sensormoreUITests.swift; sourceTree = "<group>"; };
 		022C71ED22D5148500576CDD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		026F149F22D5466C00D41FBD /* CoreMotionManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreMotionManager.swift; sourceTree = "<group>"; };
+		026F14A122D54FA500D41FBD /* CoreDataManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataManager.swift; sourceTree = "<group>"; };
+		026F14A422D54FD100D41FBD /* SensorModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = SensorModel.xcdatamodel; sourceTree = "<group>"; };
 		02D5778A22D51C4D00BA49A3 /* DateValueFormatter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DateValueFormatter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -103,15 +107,17 @@
 		022C71C822D5148400576CDD /* sensormore */ = {
 			isa = PBXGroup;
 			children = (
+				022C71D722D5148500576CDD /* Info.plist */,
+				022C71C922D5148400576CDD /* AppDelegate.swift */,
+				026F14A122D54FA500D41FBD /* CoreDataManager.swift */,
 				026F149F22D5466C00D41FBD /* CoreMotionManager.swift */,
 				02D5778A22D51C4D00BA49A3 /* DateValueFormatter.swift */,
-				022C71C922D5148400576CDD /* AppDelegate.swift */,
 				022C71CB22D5148400576CDD /* FirstViewController.swift */,
 				022C71CD22D5148400576CDD /* SecondViewController.swift */,
-				022C71CF22D5148400576CDD /* Main.storyboard */,
 				022C71D222D5148500576CDD /* Assets.xcassets */,
 				022C71D422D5148500576CDD /* LaunchScreen.storyboard */,
-				022C71D722D5148500576CDD /* Info.plist */,
+				022C71CF22D5148400576CDD /* Main.storyboard */,
+				026F14A322D54FD100D41FBD /* SensorModel.xcdatamodeld */,
 			);
 			path = sensormore;
 			sourceTree = "<group>";
@@ -265,10 +271,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				026F14A222D54FA500D41FBD /* CoreDataManager.swift in Sources */,
 				022C71CE22D5148400576CDD /* SecondViewController.swift in Sources */,
 				026F14A022D5466C00D41FBD /* CoreMotionManager.swift in Sources */,
 				022C71CA22D5148400576CDD /* AppDelegate.swift in Sources */,
 				02D5778B22D51C4D00BA49A3 /* DateValueFormatter.swift in Sources */,
+				026F14A522D54FD100D41FBD /* SensorModel.xcdatamodeld in Sources */,
 				022C71CC22D5148400576CDD /* FirstViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -598,6 +606,19 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		026F14A322D54FD100D41FBD /* SensorModel.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				026F14A422D54FD100D41FBD /* SensorModel.xcdatamodel */,
+			);
+			currentVersion = 026F14A422D54FD100D41FBD /* SensorModel.xcdatamodel */;
+			path = SensorModel.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 022C71BE22D5148400576CDD /* Project object */;
 }
