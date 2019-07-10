@@ -8,24 +8,27 @@
 
 import Foundation
 import CoreData
+import Sync
 
 class CoreDataManager {
     static let sharedManager = CoreDataManager()
-  
-    lazy var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "SensorModel")
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
-            }
-        })
-        return container
-    }()
+    
+    private var dataStack: DataStack = DataStack(modelName: "SensorModel", bundle: Bundle.main, storeType: .sqLite, storeName: "WiivvSensorModel")
+    
+//    lazy var persistentContainer: NSPersistentContainer = {
+//        let container = NSPersistentContainer(name: "SensorModel")
+//        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+//            if let error = error as NSError? {
+//                fatalError("Unresolved error \(error), \(error.userInfo)")
+//            }
+//        })
+//        return container
+//    }()
     
     init(){}
     
     func saveContext () {
-        let context = persistentContainer.viewContext
+        let context = dataStack.mainContext
         if context.hasChanges {
             do {
                 try context.save()
@@ -39,8 +42,11 @@ class CoreDataManager {
         }
     }
     
+    func exportToAppFileSharing() {
+    }
+    
     func insertAccelerometerData(_ x:Double, y:Double, z:Double) -> Accelerometer? {
-        let managedContext = persistentContainer.viewContext
+        let managedContext = dataStack.mainContext
         let entity = NSEntityDescription.entity(forEntityName: "Accelerometer", in: managedContext)!
      
         let accelerometer = NSManagedObject(entity: entity, insertInto: managedContext)
@@ -62,7 +68,7 @@ class CoreDataManager {
     }
     
     func fetchAccelerometerDatas() -> [Accelerometer]?{
-        let managedContext = CoreDataManager.sharedManager.persistentContainer.viewContext
+        let managedContext = CoreDataManager.sharedManager.dataStack.mainContext
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "Accelerometer")
     
         do {

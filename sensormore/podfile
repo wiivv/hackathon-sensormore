@@ -1,4 +1,5 @@
 target 'sensormore' do
   use_frameworks!
   pod 'Charts', '~> 3.3.0'
+  pod 'Sync', '~> 6.0'
 end

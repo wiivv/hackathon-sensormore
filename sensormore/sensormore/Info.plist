@@ -55,6 +55,8 @@
 	<string>Demo Purposes</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Demo Purposes</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
