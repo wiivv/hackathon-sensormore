@@ -64,5 +64,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Information needed for hackaton</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Information needed for hackaton</string>
 </dict>
 </plist>
