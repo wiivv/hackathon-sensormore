@@ -7,12 +7,234 @@
 //
 
 import UIKit
+import HealthKit
 
 class SecondViewController: UIViewController {
-
+    
+    let healthStore = HKHealthStore()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        // Do any additional setup after loading the view, typically from a nib.
+        
+        if HKHealthStore.isHealthDataAvailable() {
+            let readDataTypes : Set = [HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!,
+                                       HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
+                                       HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
+                                       HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)!]
+            
+            let writeDataTypes : Set = [HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!]
+            
+            healthStore.requestAuthorization(toShare: writeDataTypes, read: readDataTypes) { (success, error) in
+                if !success {
+                    // Handle the error here.
+                } else {
+                    self.getTodaysSteps{ (steps) in
+                        if steps == 0.0 {
+                            print("steps :: \(steps)")
+                        }
+                        else {
+                            DispatchQueue.main.async {
+                                print("steps :: \(steps)")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+    }
+    
+    func getTodaysSteps(completion: @escaping (Double) -> Void) {
+        let stepsQuantityType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
+        
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        
+        let query = HKStatisticsQuery(quantityType: stepsQuantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, _ in
+            guard let result = result, let sum = result.sumQuantity() else {
+                completion(0.0)
+                return
+            }
+            completion(sum.doubleValue(for: HKUnit.count()))
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    // Fetches biologicalSex of the user, and date of birth.
+    func testCharachteristic() {
+        // Biological Sex
+        if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.female {
+            print("You are female")
+        } else if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.male {
+            print("You are male")
+        } else if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.other {
+            print("You are not categorised as male or female")
+        }
+        
+        // Date of Birth
+        if #available(iOS 10.0, *) {
+            try! print(healthStore.dateOfBirthComponents())
+        } else {
+            // Fallback on earlier versions
+            do {
+                let dateOfBirth = try healthStore.dateOfBirth()
+                print(dateOfBirth)
+            } catch let error {
+                print("There was a problem fetching your data: \(error)")
+            }
+        }
+    }
+    
+    // HKSampleQuery with a nil predicate
+    func testSampleQuery() {
+        // Simple Step count query with no predicate and no sort descriptors
+        let sampleType = HKSampleType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)
+        let query = HKSampleQuery.init(sampleType: sampleType!,
+                                       predicate: nil,
+                                       limit: HKObjectQueryNoLimit,
+                                       sortDescriptors: nil) { (query, results, error) in
+                                        print(results)
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    // HKSampleQuery with a predicate
+    func testSampleQueryWithPredicate() {
+        let sampleType = HKSampleType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)
+        
+        let today = Date()
+        let startDate = Calendar.current.date(byAdding: .month, value: -3, to: today)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: today, options: HKQueryOptions.strictEndDate)
+        
+        let query = HKSampleQuery.init(sampleType: sampleType!,
+                                       predicate: predicate,
+                                       limit: HKObjectQueryNoLimit,
+                                       sortDescriptors: nil) { (query, results, error) in
+                                        print(results)
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    // Sample query with a sort descriptor
+    func testSampleQueryWithSortDescriptor() {
+        let sampleType = HKSampleType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)
+        
+        let today = Date()
+        let startDate = Calendar.current.date(byAdding: .month, value: -3, to: today)
+        
+        let predicate = HKQuery.predicateForSamples(withStart: startDate, end: today, options: HKQueryOptions.strictEndDate)
+        
+        let query = HKSampleQuery.init(sampleType: sampleType!,
+                                       predicate: predicate,
+                                       limit: HKObjectQueryNoLimit,
+                                       sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { (query, results, error) in
+                                        print(results)
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func testAnchoredQuery() {
+        guard let bodyMassType = HKObjectType.quantityType(forIdentifier: .bodyMass) else {
+            fatalError("*** Unable to get the body mass type ***")
+        }
+        
+        var anchor = HKQueryAnchor.init(fromValue: 0)
+        
+        if UserDefaults.standard.object(forKey: "Anchor") != nil {
+            let data = UserDefaults.standard.object(forKey: "Anchor") as! Data
+            anchor = NSKeyedUnarchiver.unarchiveObject(with: data) as! HKQueryAnchor
+        }
+        
+        let query = HKAnchoredObjectQuery(type: bodyMassType,
+                                          predicate: nil,
+                                          anchor: anchor,
+                                          limit: HKObjectQueryNoLimit) { (query, samplesOrNil, deletedObjectsOrNil, newAnchor, errorOrNil) in
+                                            guard let samples = samplesOrNil, let deletedObjects = deletedObjectsOrNil else {
+                                                fatalError("*** An error occurred during the initial query: \(errorOrNil!.localizedDescription) ***")
+                                            }
+                                            
+                                            anchor = newAnchor!
+                                            let data : Data = NSKeyedArchiver.archivedData(withRootObject: newAnchor as Any)
+                                            UserDefaults.standard.set(data, forKey: "Anchor")
+                                            
+                                            for bodyMassSample in samples {
+                                                print("Samples: \(bodyMassSample)")
+                                            }
+                                            
+                                            for deletedBodyMassSample in deletedObjects {
+                                                print("deleted: \(deletedBodyMassSample)")
+                                            }
+                                            
+                                            print("Anchor: \(anchor)")
+        }
+        
+        query.updateHandler = { (query, samplesOrNil, deletedObjectsOrNil, newAnchor, errorOrNil) in
+            
+            guard let samples = samplesOrNil, let deletedObjects = deletedObjectsOrNil else {
+                // Handle the error here.
+                fatalError("*** An error occurred during an update: \(errorOrNil!.localizedDescription) ***")
+            }
+            
+            anchor = newAnchor!
+            let data : Data = NSKeyedArchiver.archivedData(withRootObject: newAnchor as Any)
+            UserDefaults.standard.set(data, forKey: "Anchor")
+            
+            for bodyMassSample in samples {
+                print("samples: \(bodyMassSample)")
+            }
+            
+            for deletedBodyMassSample in deletedObjects {
+                print("deleted: \(deletedBodyMassSample)")
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func testStatisticsQueryCumulitive() {
+        guard let stepCountType = HKObjectType.quantityType(forIdentifier: .stepCount) else {
+            fatalError("*** Unable to get the step count type ***")
+        }
+        
+        let query = HKStatisticsQuery.init(quantityType: stepCountType,
+                                           quantitySamplePredicate: nil,
+                                           options: [HKStatisticsOptions.cumulativeSum, HKStatisticsOptions.separateBySource]) { (query, results, error) in
+                                            print("Total: \(results?.sumQuantity()?.doubleValue(for: HKUnit.count()))")
+                                            for source in (results?.sources)! {
+                                                print("Seperate Source: \(results?.sumQuantity(for: source)?.doubleValue(for: HKUnit.count()))")
+                                            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func testStatisticsQueryDiscrete() {
+        guard let bodyMassType = HKObjectType.quantityType(forIdentifier: .bodyMass) else {
+            fatalError("*** Unable to get the body mass type ***")
+        }
+        
+        let query = HKStatisticsQuery.init(quantityType: bodyMassType,
+                                           quantitySamplePredicate: nil,
+                                           options: [HKStatisticsOptions.discreteMax, HKStatisticsOptions.separateBySource]) { (query, results, error) in
+                                            print("Total: \(results?.maximumQuantity()?.doubleValue(for: HKUnit.pound()))")
+                                            for source in (results?.sources)! {
+                                                print("Seperate Source: \(results?.maximumQuantity(for: source)?.doubleValue(for: HKUnit.pound()))")
+                                            }
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
     }
 
 
