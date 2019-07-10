@@ -36,7 +36,7 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
         let datas = CoreDataManager.sharedManager.fetchAccelerometerDatas()
         NUM_OF_PERSISTED = datas?.count ?? 0
         dataPointLabel.text = "Persisted=\(NUM_OF_PERSISTED), Current=\(NUM_OF_CURRENT_SESSION)"
-
+        
         coreMotionManager = CoreMotionManager()
         coreMotionManager?.manCallBack = self
         
@@ -82,6 +82,10 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
         updateChartData()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+
+    }
+    
     func updateChartData() {
         if self.shouldHideData {
             chartView.data = nil
@@ -136,28 +140,34 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
         chartView.data = data
     }
     
-    func onAccelerometerUpdate(_ data: CMAcceleration) {
-        if accelerateX.count > MAX_NUM_OF_DATA_POINT {
-            accelerateX.removeFirst()
+    func onAccelerometerUpdate(_ data: CMAcceleration, foreground: Bool) {
+        if (foreground) {
+            if accelerateX.count > MAX_NUM_OF_DATA_POINT {
+                accelerateX.removeFirst()
+            }
+            if accelerateY.count > MAX_NUM_OF_DATA_POINT {
+                accelerateY.removeFirst()
+            }
+            if accelerateZ.count > MAX_NUM_OF_DATA_POINT {
+                accelerateZ.removeFirst()
+            }
+            
+            let now = Date().timeIntervalSince1970
+            if (NUM_OF_CURRENT_SESSION % 10 == 0) {
+                accelerateX.append(ChartDataEntry(x: now, y: data.x))
+                accelerateY.append(ChartDataEntry(x: now, y: data.y))
+                accelerateZ.append(ChartDataEntry(x: now, y: data.z))
+                updateChartData()
+            }
+            NUM_OF_CURRENT_SESSION += 1
+            if (NUM_OF_CURRENT_SESSION % 500 == 0) {
+                let datas = CoreDataManager.sharedManager.fetchAccelerometerDatas()
+                NUM_OF_PERSISTED = datas?.count ?? 0
+            }
+            dataPointLabel.text = "Persisted=\(NUM_OF_PERSISTED), Current=\(NUM_OF_CURRENT_SESSION)"
         }
-        if accelerateY.count > MAX_NUM_OF_DATA_POINT {
-            accelerateY.removeFirst()
-        }
-        if accelerateZ.count > MAX_NUM_OF_DATA_POINT {
-            accelerateZ.removeFirst()
-        }
-        
-        let now = Date().timeIntervalSince1970
-        accelerateX.append(ChartDataEntry(x: now, y: data.x))
-        accelerateY.append(ChartDataEntry(x: now, y: data.y))
-        accelerateZ.append(ChartDataEntry(x: now, y: data.z))
         
         let _ = CoreDataManager.sharedManager.insertAccelerometerData(data.x, y: data.y, z: data.z)
-        
-        NUM_OF_CURRENT_SESSION += 1
-        dataPointLabel.text = "Persisted=\(NUM_OF_PERSISTED), Current=\(NUM_OF_CURRENT_SESSION)"
-        
-        updateChartData()
     }
 }
 
