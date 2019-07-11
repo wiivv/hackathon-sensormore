@@ -43,11 +43,33 @@ class SecondViewController: UIViewController {
                             }
                         }
                     }
+                    self.getActiveTime{ (activetime) in
+                        if activetime == 0.0 {
+                            self.textView.insertText("you are active this many mins :: \(activetime)" + "\n")
+                            self.textView.insertText("have have been standing this many mins :: \(activetime)" + "\n") // this is just to demo the standing. Looks like appleStandTime is Beta and i can't use it.
+                        }
+                        else {
+                            DispatchQueue.main.async {
+                                self.textView.insertText("you are active this many mins :: \(activetime)" + "\n")
+                                self.textView.insertText("have have been standing this many mins :: \(activetime)" + "\n")
+                            }
+                        }
+                    }
+                    self.getrunningWalking{ (activetime) in
+                        if activetime == 0.0 {
+                            self.textView.insertText("you walked many mins :: \(activetime)" + "\n")
+                        }
+                        else {
+                            DispatchQueue.main.async {
+                                self.textView.insertText("you walked many mins :: \(activetime)" + "\n")
+                            }
+                        }
+                    }
                 }
             }
         }
         
-        testCharachteristic()
+        //testCharachteristic()
         testSampleQuery()
     }
     
@@ -59,6 +81,42 @@ class SecondViewController: UIViewController {
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
         
         let query = HKStatisticsQuery(quantityType: stepsQuantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, _ in
+            guard let result = result, let sum = result.sumQuantity() else {
+                completion(0.0)
+                return
+            }
+            completion(sum.doubleValue(for: HKUnit.count()))
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func getActiveTime(completion: @escaping (Double) -> Void) {
+        let exerciseQuantityType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!
+        
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        
+        let query = HKStatisticsQuery(quantityType: exerciseQuantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, _ in
+            guard let result = result, let sum = result.sumQuantity() else {
+                completion(0.0)
+                return
+            }
+            completion(sum.doubleValue(for: HKUnit.count()))
+        }
+        
+        healthStore.execute(query)
+    }
+    
+    func getrunningWalking(completion: @escaping (Double) -> Void) {
+        let walkingQuantityType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
+        
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        
+        let query = HKStatisticsQuery(quantityType: walkingQuantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, _ in
             guard let result = result, let sum = result.sumQuantity() else {
                 completion(0.0)
                 return
