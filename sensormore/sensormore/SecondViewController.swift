@@ -13,6 +13,8 @@ class SecondViewController: UIViewController {
     
     let healthStore = HKHealthStore()
     
+    @IBOutlet var textView: UITextView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -25,17 +27,19 @@ class SecondViewController: UIViewController {
             
             let writeDataTypes : Set = [HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!]
             
+            textView.isEditable = false
+            
             healthStore.requestAuthorization(toShare: writeDataTypes, read: readDataTypes) { (success, error) in
                 if !success {
                     // Handle the error here.
                 } else {
                     self.getTodaysSteps{ (steps) in
                         if steps == 0.0 {
-                            print("steps :: \(steps)")
+                            self.textView.insertText("steps :: \(steps)" + "\n")
                         }
                         else {
                             DispatchQueue.main.async {
-                                print("steps :: \(steps)")
+                                self.textView.insertText("steps :: \(steps)" + "\n")
                             }
                         }
                     }
@@ -43,6 +47,8 @@ class SecondViewController: UIViewController {
             }
         }
         
+        testCharachteristic()
+        testSampleQuery()
     }
     
     func getTodaysSteps(completion: @escaping (Double) -> Void) {
@@ -67,23 +73,26 @@ class SecondViewController: UIViewController {
     func testCharachteristic() {
         // Biological Sex
         if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.female {
-            print("You are female")
+            self.textView.insertText("You are female" + "\n")
         } else if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.male {
-            print("You are male")
+            self.textView.insertText("You are male" + "\n")
         } else if try! healthStore.biologicalSex().biologicalSex == HKBiologicalSex.other {
-            print("You are not categorised as male or female")
+            self.textView.insertText("You are not categorised as male or female" + "\n")
         }
         
         // Date of Birth
         if #available(iOS 10.0, *) {
-            try! print(healthStore.dateOfBirthComponents())
+            let formatter = DateComponentsFormatter()
+            formatter.unitsStyle = .full
+            try! self.textView.insertText(formatter.string(from: healthStore.dateOfBirthComponents())! + "\n")
         } else {
             // Fallback on earlier versions
             do {
+                let dateFormatter = DateFormatter()
                 let dateOfBirth = try healthStore.dateOfBirth()
-                print(dateOfBirth)
+                self.textView.insertText(dateFormatter.string(from: dateOfBirth) + "\n")
             } catch let error {
-                print("There was a problem fetching your data: \(error)")
+                self.textView.insertText("There was a problem fetching your data: \(error)" + "\n")
             }
         }
     }
@@ -96,10 +105,41 @@ class SecondViewController: UIViewController {
                                        predicate: nil,
                                        limit: HKObjectQueryNoLimit,
                                        sortDescriptors: nil) { (query, results, error) in
-                                        print(results)
+                                       
+                                        DispatchQueue.main.async { [weak self] in
+                                            guard let fResults = results else {
+                                                return
+                                            }
+                                            self?.textView.insertText((self?.printHeartRateInfo(fResults) ?? "") + "\n")
+                                        }
         }
         
         healthStore.execute(query)
+    }
+    
+    let heartRateUnit:HKUnit = HKUnit.count()
+    
+    private func printHeartRateInfo(_ results:[HKSample]) -> String
+    {
+        var outputString = ""
+    
+        for result in results
+        {
+            if let currData:HKQuantitySample = result as? HKQuantitySample
+            {
+                outputString.append(" Heart Rate: \(currData.quantity.doubleValue(for: heartRateUnit))")
+//                outputString.append(" quantityType: \(currData.quantityType)")
+//                outputString.append(" Start Date: \(currData.startDate)")
+//                outputString.append("  End Date: \(currData.endDate)")
+//                outputString.append(" Metadata: \(currData.metadata)")
+//                outputString.append(" UUID: \(currData.uuid)")
+//                outputString.append(" Source: \(currData.sourceRevision)")
+//                outputString.append(" Device: \(currData.device)")
+                outputString.append(" ,  ")
+            }
+        }
+        
+        return outputString
     }
     
     // HKSampleQuery with a predicate
@@ -115,7 +155,13 @@ class SecondViewController: UIViewController {
                                        predicate: predicate,
                                        limit: HKObjectQueryNoLimit,
                                        sortDescriptors: nil) { (query, results, error) in
-                                        print(results)
+                                       
+                                        DispatchQueue.main.async { [weak self] in
+                                            guard let fResults = results else {
+                                                return
+                                            }
+                                            self?.textView.insertText((self?.printHeartRateInfo(fResults) ?? "") + "\n")
+                                        }
         }
         
         healthStore.execute(query)
@@ -134,7 +180,13 @@ class SecondViewController: UIViewController {
                                        predicate: predicate,
                                        limit: HKObjectQueryNoLimit,
                                        sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { (query, results, error) in
-                                        print(results)
+                                        
+                                        DispatchQueue.main.async { [weak self] in
+                                            guard let fResults = results else {
+                                                return
+                                            }
+                                            self?.textView.insertText((self?.printHeartRateInfo(fResults) ?? "") + "\n")
+                                        }
         }
         
         healthStore.execute(query)
@@ -165,14 +217,14 @@ class SecondViewController: UIViewController {
                                             UserDefaults.standard.set(data, forKey: "Anchor")
                                             
                                             for bodyMassSample in samples {
-                                                print("Samples: \(bodyMassSample)")
+                                                self.textView.insertText("Samples: \(bodyMassSample)" + "\n")
                                             }
                                             
                                             for deletedBodyMassSample in deletedObjects {
-                                                print("deleted: \(deletedBodyMassSample)")
+                                                self.textView.insertText("deleted: \(deletedBodyMassSample)" + "\n")
                                             }
                                             
-                                            print("Anchor: \(anchor)")
+                                            self.textView.insertText("Anchor: \(anchor)" + "\n")
         }
         
         query.updateHandler = { (query, samplesOrNil, deletedObjectsOrNil, newAnchor, errorOrNil) in
@@ -187,11 +239,11 @@ class SecondViewController: UIViewController {
             UserDefaults.standard.set(data, forKey: "Anchor")
             
             for bodyMassSample in samples {
-                print("samples: \(bodyMassSample)")
+                self.textView.insertText("samples: \(bodyMassSample)" + "\n")
             }
             
             for deletedBodyMassSample in deletedObjects {
-                print("deleted: \(deletedBodyMassSample)")
+                self.textView.insertText("deleted: \(deletedBodyMassSample)" + "\n")
             }
         }
         
@@ -206,9 +258,9 @@ class SecondViewController: UIViewController {
         let query = HKStatisticsQuery.init(quantityType: stepCountType,
                                            quantitySamplePredicate: nil,
                                            options: [HKStatisticsOptions.cumulativeSum, HKStatisticsOptions.separateBySource]) { (query, results, error) in
-                                            print("Total: \(results?.sumQuantity()?.doubleValue(for: HKUnit.count()))")
+                                            self.textView.insertText("Total: \(results?.sumQuantity()?.doubleValue(for: HKUnit.count()))" + "\n")
                                             for source in (results?.sources)! {
-                                                print("Seperate Source: \(results?.sumQuantity(for: source)?.doubleValue(for: HKUnit.count()))")
+                                                self.textView.insertText("Seperate Source: \(results?.sumQuantity(for: source)?.doubleValue(for: HKUnit.count()))" + "\n")
                                             }
         }
         
@@ -223,9 +275,9 @@ class SecondViewController: UIViewController {
         let query = HKStatisticsQuery.init(quantityType: bodyMassType,
                                            quantitySamplePredicate: nil,
                                            options: [HKStatisticsOptions.discreteMax, HKStatisticsOptions.separateBySource]) { (query, results, error) in
-                                            print("Total: \(results?.maximumQuantity()?.doubleValue(for: HKUnit.pound()))")
+                                            self.textView.insertText("Total: \(results?.maximumQuantity()?.doubleValue(for: HKUnit.pound()))" + "\n")
                                             for source in (results?.sources)! {
-                                                print("Seperate Source: \(results?.maximumQuantity(for: source)?.doubleValue(for: HKUnit.pound()))")
+                                                self.textView.insertText("Seperate Source: \(results?.maximumQuantity(for: source)?.doubleValue(for: HKUnit.pound()))" + "\n")
                                             }
         }
         
