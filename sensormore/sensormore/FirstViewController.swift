@@ -17,6 +17,7 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
     @IBOutlet var resetButton: UIButton!
     
     var shouldHideData: Bool = false
+    var isProcessing: Bool = true
     
     let MAX_NUM_OF_DATA_POINT = 50
     var NUM_OF_PERSISTED = 0
@@ -32,6 +33,8 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        resetButton.addTarget(self, action: #selector(buttonAction), for: .touchUpInside)
         
         let datas = CoreDataManager.sharedManager.fetchAccelerometerDatas()
         NUM_OF_PERSISTED = datas?.count ?? 0
@@ -86,6 +89,17 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
 
     }
     
+    @objc func buttonAction(sender: UIButton!) {
+        if (isProcessing) {
+            isProcessing = false
+            resetButton.setTitle("Start", for: .normal)
+        }
+        else {
+            isProcessing = true
+            resetButton.setTitle("Stop", for: .normal)
+        }
+    }
+
     func updateChartData() {
         if self.shouldHideData {
             chartView.data = nil
@@ -141,6 +155,11 @@ class FirstViewController: UIViewController, ChartViewDelegate, CoreMotionManage
     }
     
     func onAccelerometerUpdate(_ data: CMAcceleration, foreground: Bool) {
+        if (!isProcessing) {
+            return
+        }
+        
+        
         if (foreground) {
             if accelerateX.count > MAX_NUM_OF_DATA_POINT {
                 accelerateX.removeFirst()
