@@ -13,7 +13,7 @@ import Sync
 class CoreDataManager {
     static let sharedManager = CoreDataManager()
     
-    private var dataStack: DataStack = DataStack(modelName: "SensorModel", bundle: Bundle.main, storeType: .sqLite, storeName: "WiivvSensorModel")
+    private var dataStack: DataStack?
     
 //    lazy var persistentContainer: NSPersistentContainer = {
 //        let container = NSPersistentContainer(name: "SensorModel")
@@ -25,10 +25,15 @@ class CoreDataManager {
 //        return container
 //    }()
     
-    init(){}
+    init(){
+        dataStack = DataStack(modelName: "SensorModel", bundle: Bundle.main, storeType: .sqLite, storeName: "WiivvSensorModel")
+    }
     
     func saveContext () {
-        let context = dataStack.mainContext
+        guard let context = dataStack?.mainContext else {
+            return
+        }
+        
         if context.hasChanges {
             do {
                 try context.save()
@@ -46,7 +51,10 @@ class CoreDataManager {
     }
     
     func insertAccelerometerData(_ x:Double, y:Double, z:Double) -> Accelerometer? {
-        let managedContext = dataStack.mainContext
+        guard let managedContext = dataStack?.mainContext else {
+            return nil
+        }
+        
         let entity = NSEntityDescription.entity(forEntityName: "Accelerometer", in: managedContext)!
      
         let accelerometer = NSManagedObject(entity: entity, insertInto: managedContext)
@@ -68,7 +76,10 @@ class CoreDataManager {
     }
     
     func fetchAccelerometerDatas() -> [Accelerometer]?{
-        let managedContext = CoreDataManager.sharedManager.dataStack.mainContext
+        guard let managedContext = dataStack?.mainContext else {
+            return nil
+        }
+        
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "Accelerometer")
     
         do {
