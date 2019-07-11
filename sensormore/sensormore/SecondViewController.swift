@@ -9,6 +9,29 @@
 import UIKit
 import HealthKit
 
+extension Date {
+    static var yesterday: Date { return Date().dayBefore }
+    static var tomorrow:  Date { return Date().dayAfter }
+    var dayBefore: Date {
+        return Calendar.current.date(byAdding: .day, value: -1, to: noon)!
+    }
+    var weekBefore: Date {
+        return Calendar.current.date(byAdding: .day, value: -7, to: noon)!
+    }
+    var dayAfter: Date {
+        return Calendar.current.date(byAdding: .day, value: 1, to: noon)!
+    }
+    var noon: Date {
+        return Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: self)!
+    }
+    var month: Int {
+        return Calendar.current.component(.month,  from: self)
+    }
+    var isLastDayOfMonth: Bool {
+        return dayAfter.month != month
+    }
+}
+
 class SecondViewController: UIViewController {
     
     let healthStore = HKHealthStore()
@@ -23,7 +46,9 @@ class SecondViewController: UIViewController {
             let readDataTypes : Set = [HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!,
                                        HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.biologicalSex)!,
                                        HKObjectType.characteristicType(forIdentifier: HKCharacteristicTypeIdentifier.dateOfBirth)!,
-                                       HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)!]
+                                       HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.bodyMass)!,
+                                       HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.appleExerciseTime)!,
+                                       HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.distanceWalkingRunning)!]
             
             let writeDataTypes : Set = [HKObjectType.quantityType(forIdentifier: HKQuantityTypeIdentifier.stepCount)!]
             
@@ -33,36 +58,19 @@ class SecondViewController: UIViewController {
                 if !success {
                     // Handle the error here.
                 } else {
-                    self.getTodaysSteps{ (steps) in
-                        if steps == 0.0 {
-                            self.textView.insertText("steps :: \(steps)" + "\n")
-                        }
-                        else {
-                            DispatchQueue.main.async {
-                                self.textView.insertText("steps :: \(steps)" + "\n")
-                            }
+                    self.getTodaysSteps() { (steps) in
+                        DispatchQueue.main.async {
+                            self.textView.insertText("steps :: \(steps)" + "\n\n")
                         }
                     }
-                    self.getActiveTime{ (activetime) in
-                        if activetime == 0.0 {
-                            self.textView.insertText("you are active this many mins :: \(activetime)" + "\n")
-                            self.textView.insertText("have have been standing this many mins :: \(activetime)" + "\n") // this is just to demo the standing. Looks like appleStandTime is Beta and i can't use it.
-                        }
-                        else {
-                            DispatchQueue.main.async {
-                                self.textView.insertText("you are active this many mins :: \(activetime)" + "\n")
-                                self.textView.insertText("have have been standing this many mins :: \(activetime)" + "\n")
-                            }
+                    self.getActiveTime() { (activetime) in
+                        DispatchQueue.main.async {
+                            self.textView.insertText("you are active this many mins in this week :: \(activetime)" + "\n\n")
                         }
                     }
-                    self.getrunningWalking{ (activetime) in
-                        if activetime == 0.0 {
-                            self.textView.insertText("you walked many mins :: \(activetime)" + "\n")
-                        }
-                        else {
-                            DispatchQueue.main.async {
-                                self.textView.insertText("you walked many mins :: \(activetime)" + "\n")
-                            }
+                    self.getrunningWalking() { (runningtime) in
+                        DispatchQueue.main.async {
+                            self.textView.insertText("you walked many meters in this week :: \(runningtime)" + "\n\n")
                         }
                     }
                 }
@@ -91,10 +99,12 @@ class SecondViewController: UIViewController {
         healthStore.execute(query)
     }
     
+
+    
     func getActiveTime(completion: @escaping (Double) -> Void) {
         let exerciseQuantityType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime)!
         
-        let now = Date()
+        let now = Date().weekBefore
         let startOfDay = Calendar.current.startOfDay(for: now)
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
         
@@ -103,7 +113,7 @@ class SecondViewController: UIViewController {
                 completion(0.0)
                 return
             }
-            completion(sum.doubleValue(for: HKUnit.count()))
+            completion(sum.doubleValue(for: HKUnit.minute()))
         }
         
         healthStore.execute(query)
@@ -112,7 +122,7 @@ class SecondViewController: UIViewController {
     func getrunningWalking(completion: @escaping (Double) -> Void) {
         let walkingQuantityType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!
         
-        let now = Date()
+        let now = Date().weekBefore
         let startOfDay = Calendar.current.startOfDay(for: now)
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
         
@@ -121,7 +131,7 @@ class SecondViewController: UIViewController {
                 completion(0.0)
                 return
             }
-            completion(sum.doubleValue(for: HKUnit.count()))
+            completion(sum.doubleValue(for: HKUnit.meter()))
         }
         
         healthStore.execute(query)
